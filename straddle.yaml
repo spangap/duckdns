@@ -1,0 +1,10 @@
+# duckdns — DuckDNS dynamic DNS client for spangap.
+schema_version: 1
+name: spangap/duckdns
+prefix: duckdns
+version: 0.1.0
+firmware: esp-idf
+browser: browser
+platforms: [idf]
+requires:
+  - spangap/spangap-net
