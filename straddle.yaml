@@ -8,3 +8,10 @@ browser: browser
 platforms: [idf]
 requires:
   - spangap/spangap-net
+  # duckdns.cpp unconditionally #include's "upnp.h"; hard dep until that
+  # call site is gated on CONFIG_SPANGAP_UPNP.
+  - spangap/upnp
+optional_requires:
+  # duckdns.cpp registers a Settings pane via lcdSetting* helpers,
+  # gated on CONFIG_SPANGAP_LCD.
+  - spangap/spangap-lcd
