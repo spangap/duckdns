@@ -176,18 +176,18 @@ static void duckdnsStatus(cli_write_fn write) {
     int n;
     char domain[64], token[80];
     if (!configured(domain, sizeof(domain), token, sizeof(token))) {
-        n = snprintf(buf, sizeof(buf), "  duckdns: not configured\n");
+        n = snprintf(buf, sizeof(buf), "duckdns: not configured\n");
         write(buf, (size_t)n);
         return;
     }
-    n = snprintf(buf, sizeof(buf), "  domain: %s.duckdns.org\n", domain);
+    n = snprintf(buf, sizeof(buf), "domain: %s.duckdns.org\n", domain);
     write(buf, (size_t)n);
     if (lastIp[0]) {
-        n = snprintf(buf, sizeof(buf), "  ip: %s\n", lastIp);
+        n = snprintf(buf, sizeof(buf), "ip: %s\n", lastIp);
         write(buf, (size_t)n);
     }
     if (lastStatus[0]) {
-        n = snprintf(buf, sizeof(buf), "  status: %s\n", lastStatus);
+        n = snprintf(buf, sizeof(buf), "status: %s\n", lastStatus);
         write(buf, (size_t)n);
     }
 }
@@ -236,11 +236,11 @@ void duckdnsInit() {
         storageSet("dns.txtrecord.capable", 1);
     static auto w = [](const char* d, size_t l) { cliPrintf("%.*s", (int)l, d); };
     cliRegisterCmd("duckdns update", [](const char* a) {
-        if (strcmp(a, "help") == 0) { cliPrintf("  %-*s force DNS update\n", CLI_HELP_COL, "duckdns update"); return; }
+        if (cliWantsHelp(a)) { cliPrintf("%-*s force DNS update\n", CLI_HELP_COL, "duckdns update"); return; }
         duckdnsUpdate();
     });
     cliRegisterCmd("duckdns", [](const char* a) {
-        if (strcmp(a, "help") == 0) { cliPrintf("  %-*s DuckDNS status\n", CLI_HELP_COL, "duckdns [update]"); return; }
+        if (cliWantsHelp(a)) { cliPrintf("%-*s DuckDNS status\n", CLI_HELP_COL, "duckdns"); return; }
         duckdnsStatus(w);
     });
 }
