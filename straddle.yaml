@@ -15,3 +15,8 @@ optional_requires:
   # duckdns.cpp registers a Settings pane via lcdSetting* helpers,
   # gated on CONFIG_SPANGAP_LCD.
   - spangap/spangap-lcd
+# Auto-init: folded into the buildable's generated spangapInitStraddles().
+# duckdnsInit() registers net-event callbacks, a cron entry, and a CLI verb —
+# order-independent once net/storage/cron/cli are up. Default order (100).
+init:
+  - call: duckdnsInit
