@@ -17,6 +17,7 @@ optional_requires:
   - spangap/spangap-lcd
 # Auto-init: folded into the buildable's generated spangapInitStraddles().
 # duckdnsInit() registers net-event callbacks, a cron entry, and a CLI verb —
-# order-independent once net/storage/cron/cli are up. Default order (100).
+# net/storage/cron/cli are all up by the time the straddle band runs. upnp
+# (hard requires:) is ordered ahead of it by the dependency-topo walk.
 init:
   - call: duckdnsInit
