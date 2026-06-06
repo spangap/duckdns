@@ -202,17 +202,6 @@ static void duckdnsNetCfg(const char*) {
     }
 }
 
-#if CONFIG_SPANGAP_LCD
-#include "lcd.h"
-/* On-device Settings → Net → DuckDNS pane. Mirrors the browser DuckDnsPanel. */
-static void duckdnsSettingsPane(void* arg) {
-    lv_obj_t* p = static_cast<lv_obj_t*>(arg);
-    lcdSettingSection(p, "DuckDNS");
-    lcdSettingText   (p, "Subdomain", "s.duckdns.domain");
-    lcdSettingText   (p, "Token",     "s.duckdns.token", true);   /* secret */
-}
-#endif
-
 void duckdnsInit() {
     /* Self-register: install own defaults + cron entry on first run / upgrade. */
     int v = storageGetInt("s.duckdns.version", 0);
@@ -222,10 +211,6 @@ void duckdnsInit() {
         cronDefault("*/15 * * * * N", "duckdns update");
         storageSet("s.duckdns.version", DUCKDNS_VERSION);
     }
-
-#if CONFIG_SPANGAP_LCD
-    lcdRegisterSettings("Net/DuckDNS", "DuckDNS", duckdnsSettingsPane);
-#endif
 
     netRegister(NET_EV_UPSTREAM_UP,   duckdnsStart);
     netRegister(NET_EV_UPSTREAM_DOWN, duckdnsStop);
