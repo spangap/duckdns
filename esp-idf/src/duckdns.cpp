@@ -7,11 +7,17 @@
  * network up and reacts to UPnP external-IP changes.
  */
 #include "duckdns.h"
-#include "upnp.h"
 #include "storage.h"
 #include "cron.h"
 #include "cli.h"
 #include "log.h"
+// upnp is an optional integration — gate the include AFTER the spangap headers
+// above (which transitively pull in sdkconfig.h), so CONFIG_SPANGAP_UPNP is
+// actually defined when this #if is evaluated. (Same ordering acme uses for
+// CONFIG_SPANGAP_WEB — gating before sdkconfig.h is in scope silently skips it.)
+#if CONFIG_SPANGAP_UPNP
+#include "upnp.h"
+#endif
 #include "compat.h"
 #include "net.h"
 #include <esp_http_client.h>
@@ -97,8 +103,14 @@ static void duckdnsUpdateTask(void*) {
         return;
     }
 
-    /* Use external IP from UPnP if available, otherwise let DuckDNS auto-detect */
+    /* Use external IP from UPnP if available, otherwise let DuckDNS auto-detect.
+     * UPnP is an optional integration: without it `ip` stays empty and DuckDNS
+     * auto-detects the public IP from the request source (the else branch below). */
+#if CONFIG_SPANGAP_UPNP
     const char* ip = upnpExternalIp();
+#else
+    const char* ip = "";
+#endif
     char url[256];
     if (ip[0])
         snprintf(url, sizeof(url),
