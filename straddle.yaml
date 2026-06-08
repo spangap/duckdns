@@ -19,3 +19,9 @@ init:
   - call: duckdnsInit
   - call: duckdnsLcdRegister
     when: spangap/spangap-lcd
+# Browser auto-registration (parallel to init:): staging duckdns into a browser
+# buildable imports registerDuckDns (duckdns/modules/duckdns — note the casing,
+# which is why the symbol is declared explicitly) into straddles.gen.ts and
+# injects the file: dep — the DuckDNS pane appears under Settings → Network.
+browser_register:
+  - call: registerDuckDns
