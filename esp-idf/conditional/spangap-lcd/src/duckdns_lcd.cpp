@@ -20,5 +20,5 @@ static void duckdnsSettingsPane(void* arg) {
  * (spangap/spangap-lcd). Plain C++ linkage to match the generated
  * dispatcher's forward decl. */
 void duckdnsLcdRegister(void) {
-    lcdRegisterSettings("Net/DuckDNS", "DuckDNS", duckdnsSettingsPane);
+    lcdRegisterSettings("Internet/DuckDNS", "DuckDNS", duckdnsSettingsPane);
 }
