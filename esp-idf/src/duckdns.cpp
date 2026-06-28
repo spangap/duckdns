@@ -218,8 +218,8 @@ void duckdnsInit() {
     /* Self-register: install own defaults + cron entry on first run / upgrade. */
     int v = storageGetInt("s.duckdns.version", 0);
     if (v < DUCKDNS_VERSION) {
-        storageDefault("s.duckdns.domain", "");
-        storageDefault("s.duckdns.token", "");
+        /* s.duckdns.{domain,token} defaults are seeded by the generated
+         * spangapSettingsGenDefaults() from this straddle's `settings:` block. */
         cronDefault("*/15 * * * * N", "duckdns update");
         storageSet("s.duckdns.version", DUCKDNS_VERSION);
     }

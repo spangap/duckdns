@@ -17,11 +17,17 @@ requires:
 # net/storage/cron/cli are all up by the time the straddle band runs.
 init:
   - call: duckdnsInit
-  - call: duckdnsLcdRegister
-    when: spangap/spangap-lcd
-# Browser auto-registration (parallel to init:): staging duckdns into a browser
-# buildable imports registerDuckDns (duckdns/modules/duckdns — note the casing,
-# which is why the symbol is declared explicitly) into straddles.gen.ts and
-# injects the file: dep — the DuckDNS pane appears under Settings → Network.
-browser_register:
-  - call: registerDuckDns
+# The DuckDNS pane's web half is now generated from the `settings:` block below
+# (registered via the buildable's straddles.gen.ts registerGeneratedPanels), so
+# this straddle no longer ships a browser module / browser_register hook.
+
+# Declarative settings: the DuckDNS pane (LCD + web + storage defaults from one
+# source). The token is `secret:` — masked on the LCD, write-only on the web.
+settings:
+  - menu:
+      - { id: network, label: "Internet", placement: 2 }
+      - { id: duckdns, label: "DuckDNS" }
+    rows:
+      - text:    { label: "Subdomain", key: "s.duckdns.domain", default: "" }
+      - text:    { label: "Token", key: "s.duckdns.token", default: "", secret: true }
+      - caption: "Only the subdomain (e.g. myname for myname.duckdns.org). Token from the DuckDNS dashboard. Crontab runs 'duckdns update' when the network is up."

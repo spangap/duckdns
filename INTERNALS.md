@@ -1,38 +1,95 @@
 # duckdns — internals
 
-## Request shape
+Maintainer reference for the DuckDNS client. The [README](README.md) is the
+operator guide; this document is for changing the code without breaking it.
 
-DuckDNS API is a simple GET to:
+## 1. What this straddle adds
+
+Everything here is original — there is no upstream library. The whole module is
+`esp-idf/src/duckdns.cpp` (public API in `esp-idf/include/duckdns.h`):
+
+- A net-event-driven A-record updater (`s.duckdns.domain` + `s.duckdns.token`).
+- A `dns.txtrecord` storage subscriber that publishes/clears the subdomain's TXT
+  record for `acme`'s DNS-01 challenge.
+- The `dns.txtrecord.capable` capability advertisement.
+- A cron entry (`duckdns update`, every 15 minutes) and two CLI verbs
+  (`duckdns`, `duckdns update`).
+
+It owns no ITS ports and exposes no socket API — storage and CLI are the entire
+control surface. The web/LCD settings pane is **generated** from the `settings:`
+block in `straddle.yaml`; `browser/` ships only a `package.json`, no source.
+
+## 2. The HTTP request shapes
+
+Every call is a single HTTPS GET to `https://www.duckdns.org/update` with
+`verbose=true`, a 10 s timeout, and the ESP cert bundle. A response is a success
+only when the status is 200 and the body contains `OK`.
+
+**A-record update** (`duckdnsUpdateTask`):
 
 ```
-https://www.duckdns.org/update?domains=<sub>&token=<token>&ip=<ip>&txt=<txt>
+?domains=<sub>&token=<token>&ip=<ip>&verbose=true     (ip from upnpExternalIp())
+?domains=<sub>&token=<token>&verbose=true             (ip omitted → DuckDNS auto-detects)
 ```
 
-`ip` is empty by default (DuckDNS infers from the request source IP).
-For DNS-01 the request also sets `txt=<token>`.
+`ip` is sent only when `CONFIG_SPANGAP_UPNP` is defined *and* `upnpExternalIp()`
+returns a non-empty address. There is no AAAA / IPv6 path — A record only.
 
-## Cadence
+**TXT record** (`duckdnsTxtTask`), driven by the `dns.txtrecord` subscription:
 
-A cron entry runs the A/AAAA refresh every 5–15 minutes when upstream
-is healthy. `netRegister(NET_EV_UPSTREAM_UP, …)` triggers a refresh on
-re-connect.
+```
+?domains=<sub>&token=<token>&txt=<value>&verbose=true       (set)
+?domains=<sub>&token=<token>&txt=&clear=true&verbose=true    (clear, when value is empty)
+```
 
-## TXT for DNS-01
+The `<value>` is whatever `acme` wrote to `dns.txtrecord` — the challenge string,
+not the DuckDNS token.
 
-`duckdnsSetTxt(value)` / `duckdnsClearTxt()` — called by `acme` during
-a DNS-01 challenge. After clearing, DuckDNS removes the record on the
-next refresh.
+## 3. Task model
 
-## Why this is its own straddle
+HTTPS needs a real stack, so each network call runs on its own temporary task
+spawned via `spawnTask(..., 8192, ..., prio 1, core 0)`, which `killSelf()`s on
+completion:
 
-It's a tiny piece of code, but it's a *transitive* dependency for the
-DNS-01 challenge path in `acme`. Keeping it separate means
-`spangap/acme` can declare `requires: spangap/duckdns` without `acme`
-itself carrying DuckDNS-specific code. A future Cloudflare- or
-Route53-backed straddle would slot in the same way.
+- `duckdnsUpdateTask` (task name `duckdns`) — the A-record update. Guarded by a
+  `volatile bool updateBusy` so `duckdnsUpdate()` collapses concurrent requests
+  into one in-flight update; the cron tick and a manual `duckdns update` can't
+  pile up. It calls `netActivity()` to register network activity for power
+  management.
+- `duckdnsTxtTask` (task name `ddtxt`) — one per `dns.txtrecord` change, with the
+  new value `strdup`'d and handed to the task (which `free`s it).
 
-## Token handling
+`lastIp[48]` and `lastStatus[8]` are plain RAM globals updated by the update task
+and read by `duckdnsStatus`; `duckdnsStop` (on network-down) clears them.
 
-The token lives under `secrets.duckdns.token` — never sent to the
-browser; it is set via the operator panel (POST-only to the device) and
-displayed back only as a masked indicator.
+## 4. Lifecycle
+
+`duckdnsInit()` (called by the build's generated init) wires everything:
+
+- `netRegister(NET_EV_UPSTREAM_UP, duckdnsStart)` — spawns the initial update
+  task when the network comes up (no-op if unconfigured).
+- `netRegister(NET_EV_UPSTREAM_DOWN, duckdnsStop)` — clears the cached state.
+- `netRegister(NET_EV_UPSTREAM_UP, duckdnsNetCfg)` — subscribes to
+  `dns.txtrecord` (see the pitfall below).
+- Sets `dns.txtrecord.capable = 1` if a domain and token are configured.
+- Registers the `duckdns` and `duckdns update` CLI commands.
+- Installs the cron default `*/15 * * * * N` → `duckdns update`.
+
+## 5. Pitfalls
+
+- **Subscribe to `dns.txtrecord` from a net-event callback, not at init.** The
+  subscription is registered in `duckdnsNetCfg` (a `NET_EV_UPSTREAM_UP`
+  handler) rather than directly in `duckdnsInit`, because `app_main` deletes
+  itself after boot — a `storageSubscribeChanges` registered on that task would
+  never fire once the task is gone. A `static bool subscribed` makes it one-shot
+  across repeated network-up edges.
+- **Gate the `upnp.h` include after the spangap headers.** The `#if
+  CONFIG_SPANGAP_UPNP` must come after the includes that transitively pull in
+  `sdkconfig.h`; gating before that symbol is in scope silently skips the UPnP
+  integration even when upnp is staged.
+- **The TXT value is the challenge string, not the token.** Don't confuse the
+  `token=` parameter (auth) with `txt=` (the value being published). They are
+  unrelated.
+- **`s.duckdns.version` is a config-version gate, not a feature.** It exists only
+  to install the cron default once; under the no-config-migrations policy it is a
+  candidate for removal, not something to surface to operators.
