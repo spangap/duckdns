@@ -12,11 +12,11 @@ requires:
 # lookup (upnpExternalIp) is `#if CONFIG_SPANGAP_UPNP`, and DuckDNS auto-detects
 # the public IP from the request when UPnP is absent. The build reads that #if
 # cue and adds upnp to REQUIRES only when it's staged; no upnp → it compiles away.
-# Auto-init: folded into the buildable's generated spangapInitStraddles().
-# duckdnsInit() registers net-event callbacks, a cron entry, and a CLI verb —
+# Auto-init: DuckdnsService::onInit is run by the buildable's generated boot
+# dispatcher. It registers net-event callbacks, a cron entry, and a CLI verb —
 # net/storage/cron/cli are all up by the time the straddle band runs.
-init:
-  - call: duckdnsInit
+services:
+  - { class: DuckdnsService, header: duckdns.h }
 # The DuckDNS pane's web half is now generated from the `settings:` block below
 # (registered via the buildable's straddles.gen.ts registerGeneratedPanels), so
 # this straddle no longer ships a browser module / browser_register hook.

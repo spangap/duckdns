@@ -214,7 +214,7 @@ static void duckdnsNetCfg(const char*) {
     }
 }
 
-void duckdnsInit() {
+void DuckdnsService::onInit() {
     /* Self-register: install own defaults + cron entry on first run / upgrade. */
     int v = storageGetInt("s.duckdns.version", 0);
     if (v < DUCKDNS_VERSION) {
