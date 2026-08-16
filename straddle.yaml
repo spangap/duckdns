@@ -24,8 +24,8 @@ services:
 # Declarative settings: the DuckDNS pane (LCD + web + storage defaults from one
 # source). The token is `secret:` — masked on the LCD, write-only on the web.
 settings:
-  - menu:
-      - { id: network, label: "Internet", placement: 2 }
+  - at:
+      - { id: network, label: "Internet", order: 2 }
       - { id: duckdns, label: "DuckDNS" }
     rows:
       - text:    { label: "Subdomain", key: "s.duckdns.domain", default: "" }
