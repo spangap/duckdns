@@ -25,7 +25,7 @@ services:
 # source). The token is `secret:` — masked on the LCD, write-only on the web.
 settings:
   - at:
-      - { id: network, label: "Internet", order: 2 }
+      - { id: net }
       - { id: duckdns, label: "DuckDNS" }
     rows:
       - text:    { label: "Subdomain", key: "s.duckdns.domain", default: "" }
