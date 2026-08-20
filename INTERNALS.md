@@ -73,7 +73,10 @@ and read by `duckdnsStatus`; `duckdnsStop` (on network-down) clears them.
   `dns.txtrecord` (see the pitfall below).
 - Sets `dns.txtrecord.capable = 1` if a domain and token are configured.
 - Registers the `duckdns` and `duckdns update` CLI commands.
-- Installs the cron default `*/15 * * * * N` → `duckdns update`.
+- Keeps `s.cron.tab.duckdns = "*/15 * * * * N duckdns update"` in step with the
+  configuration (`duckdnsApplyCron`): present while a domain and token are set
+  (`storageDefault`, so a schedule tweak survives), removed otherwise. Applied
+  at init and via a storage-task-hosted subscription on `s.duckdns`.
 
 ## 5. Pitfalls
 
@@ -90,6 +93,3 @@ and read by `duckdnsStatus`; `duckdnsStop` (on network-down) clears them.
 - **The TXT value is the challenge string, not the token.** Don't confuse the
   `token=` parameter (auth) with `txt=` (the value being published). They are
   unrelated.
-- **`s.duckdns.version` is a config-version gate, not a feature.** It exists only
-  to install the cron default once; under the no-config-migrations policy it is a
-  candidate for removal, not something to surface to operators.

@@ -2,13 +2,13 @@
  * DuckDNS dynamic DNS client.
  *
  * Updates A record with external IP, supports TXT records for ACME DNS-01.
- * HTTPS calls run on temp tasks (8KB stack). Periodic updates scheduled via
- * crontab ("duckdns update") — this module only does an initial update on
- * network up and reacts to UPnP external-IP changes.
+ * HTTPS calls run on temp tasks (8KB stack). Periodic updates run from the
+ * cron entry s.cron.tab.duckdns ("duckdns update"), present while configured
+ * — this module only does an initial update on network up and reacts to UPnP
+ * external-IP changes.
  */
 #include "duckdns.h"
 #include "storage.h"
-#include "cron.h"
 #include "cli.h"
 #include "log.h"
 // upnp is an optional integration — gate the include AFTER the spangap headers
@@ -26,12 +26,6 @@
 #include <string>
 #include <cstring>
 #include <cstdio>
-
-/* Module config version. Bump when adding/changing defaults that need
- * installing on existing devices (storageDefault is set-if-absent, so new
- * keys are picked up automatically; cronDefault is gated by the version
- * bump so user edits to the entry are preserved across reboots). */
-#define DUCKDNS_VERSION 1
 
 /* ---- State ---- */
 
@@ -89,6 +83,15 @@ static bool configured(char* domain, size_t domainLen, char* token, size_t token
     storageGetStr("s.duckdns.domain", domain, domainLen);
     storageGetStr("s.duckdns.token", token, tokenLen);
     return domain[0] && token[0];
+}
+
+/* Keep the periodic-update cron entry in step with the configuration. */
+static void duckdnsApplyCron(const char*, const char*) {
+    char domain[64], token[80];
+    if (configured(domain, sizeof(domain), token, sizeof(token)))
+        storageDefault("s.cron.tab.duckdns", "*/15 * * * * N duckdns update");
+    else if (storageExists("s.cron.tab.duckdns"))
+        storageUnset("s.cron.tab.duckdns");
 }
 
 /* ---- Update task ---- */
@@ -169,7 +172,7 @@ static void duckdnsStart(const char*) {
     char domain[64], token[80];
     if (!configured(domain, sizeof(domain), token, sizeof(token))) return;
 
-    /* Initial update on net-up. Further updates scheduled via crontab. */
+    /* Initial update on net-up. Further updates run from the cron entry. */
     spawnTask(duckdnsUpdateTask, "duckdns", 8192, nullptr, 1, 0);
 }
 
@@ -215,14 +218,13 @@ static void duckdnsNetCfg(const char*) {
 }
 
 void DuckdnsService::onInit() {
-    /* Self-register: install own defaults + cron entry on first run / upgrade. */
-    int v = storageGetInt("s.duckdns.version", 0);
-    if (v < DUCKDNS_VERSION) {
-        /* s.duckdns.{domain,token} defaults are seeded by the generated
-         * spangapSettingsGenDefaults() from this straddle's `settings:` block. */
-        cronDefault("*/15 * * * * N", "duckdns update");
-        storageSet("s.duckdns.version", DUCKDNS_VERSION);
-    }
+    /* s.duckdns.{domain,token} defaults are seeded by the generated
+     * spangapSettingsGenDefaults() from this straddle's `settings:` block.
+     * The cron entry exists exactly while a domain+token are configured;
+     * storageDefault (not Set) so a user's schedule tweak survives while
+     * configured. Hosted on the storage task — no long-lived task here. */
+    storageSubscribeChanges("s.duckdns", duckdnsApplyCron, /*onStorageTask=*/true);
+    duckdnsApplyCron(nullptr, nullptr);
 
     netRegister(NET_EV_UPSTREAM_UP,   duckdnsStart);
     netRegister(NET_EV_UPSTREAM_DOWN, duckdnsStop);
