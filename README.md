@@ -1,16 +1,16 @@
-# duckdns — DuckDNS dynamic DNS client
+# duckdns — Duck DNS dynamic DNS client
 
 **duckdns** keeps a stable public hostname pointed at the device's changing
-public IP using [DuckDNS](https://www.duckdns.org), and publishes the DNS TXT
+public IP using [Duck DNS](https://www.duckdns.org), and publishes the DNS TXT
 record that [acme](../acme) needs for a DNS-01 certificate challenge. It updates
-a single **A record** (IPv4 only) for one DuckDNS subdomain.
+a single **A record** (IPv4 only) for one Duck DNS subdomain.
 
 ## What it does
 
 When the network comes up, duckdns does one A-record update, then a cron entry
 (`duckdns update`, every 15 minutes) keeps it fresh. If [upnp](../upnp) is in the
 build and has learned the gateway's external IP, that IP is sent explicitly;
-otherwise the `ip` parameter is omitted and DuckDNS infers the public IP from the
+otherwise the `ip` parameter is omitted and Duck DNS infers the public IP from the
 request's source address.
 
 Enablement is **implicit**: there is no enable switch. With no subdomain and no
@@ -28,11 +28,11 @@ to make.
   challenge, `acme` writes the challenge value to `dns.txtrecord`; duckdns
   **subscribes** to that key and publishes it as the subdomain's TXT record on
   change (writing an empty value clears the record). The TXT value is the ACME
-  challenge string — it is **not** the DuckDNS token. The cross-cutting overview
+  challenge string — it is **not** the Duck DNS token. The cross-cutting overview
   is in [spangap-core/docs/remote-access.md](../spangap-core/docs/remote-access.md).
 - **[upnp](../upnp) — external IP (optional).** Used only as a source for the
   explicit `ip=` parameter. duckdns compiles against it only when it is staged;
-  without it, DuckDNS auto-detection covers the same need.
+  without it, Duck DNS auto-detection covers the same need.
 - **[spangap-net](../spangap-net)** — provides the HTTPS client (and the
   network-up/down events that drive the initial update).
 
@@ -43,7 +43,7 @@ to make.
 | Key | Default | Meaning |
 |---|---|---|
 | `s.duckdns.domain` | `""` | The subdomain only — `myname` for `myname.duckdns.org`. |
-| `s.duckdns.token` | `""` | DuckDNS account token. **Secret**: masked on the LCD, write-only on the web (never read back to the browser). |
+| `s.duckdns.token` | `""` | Duck DNS account token. Masked where it is shown, and readable when asked for — it is a string the operator copied off a dashboard, not a credential to be posted into a void. |
 
 These two keys are owned here, but their defaults are declared in this straddle's
 `straddle.yaml` `settings:` block (which also generates the LCD pane and the web
@@ -64,13 +64,13 @@ only — they are not published to storage and reset on reboot or on network-dow
 ## CLI
 
 ```
-duckdns            DuckDNS status — domain, last IP, last result
+duckdns            Duck DNS status — domain, last IP, last result
 duckdns update     force an immediate A-record update
 ```
 
 `duckdns` with nothing configured prints `duckdns: not configured`. Otherwise it
 prints the full hostname, the IP used by the last update (an explicit address, or
-`(auto)` when DuckDNS detected it), and the last result (`OK`, `FAIL`, an HTTP
+`(auto)` when Duck DNS detected it), and the last result (`OK`, `FAIL`, an HTTP
 status code, or `err`). Run either on-device through `spangap cli "<command>"`.
 
 ## Dependencies

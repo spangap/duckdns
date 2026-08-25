@@ -1,6 +1,6 @@
 # duckdns — internals
 
-Maintainer reference for the DuckDNS client. The [README](README.md) is the
+Maintainer reference for the Duck DNS client. The [README](README.md) is the
 operator guide; this document is for changing the code without breaking it.
 
 ## 1. What this straddle adds
@@ -29,7 +29,7 @@ only when the status is 200 and the body contains `OK`.
 
 ```
 ?domains=<sub>&token=<token>&ip=<ip>&verbose=true     (ip from upnpExternalIp())
-?domains=<sub>&token=<token>&verbose=true             (ip omitted → DuckDNS auto-detects)
+?domains=<sub>&token=<token>&verbose=true             (ip omitted → Duck DNS auto-detects)
 ```
 
 `ip` is sent only when `CONFIG_SPANGAP_UPNP` is defined *and* `upnpExternalIp()`
@@ -43,7 +43,7 @@ returns a non-empty address. There is no AAAA / IPv6 path — A record only.
 ```
 
 The `<value>` is whatever `acme` wrote to `dns.txtrecord` — the challenge string,
-not the DuckDNS token.
+not the Duck DNS token.
 
 ## 3. Task model
 

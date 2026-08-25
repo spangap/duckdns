@@ -128,7 +128,7 @@ static void duckdnsUpdateTask(void*) {
         snprintf(lastIp, sizeof(lastIp), "%s", ip[0] ? ip : "(auto)");
         info("%s.duckdns.org → %s\n", domain, lastIp);
     } else {
-        err("DuckDNS update failed\n");
+        err("Duck DNS update failed\n");
     }
 
     updateBusy = false;
@@ -147,7 +147,7 @@ static void duckdnsTxtTask(void* arg) {
                 "https://www.duckdns.org/update?domains=%s&token=%s&txt=%s&verbose=true",
                 domain, token, txt);
             bool ok = duckdnsGet(url);
-            info("DuckDNS TXT %s: %s\n", ok ? "set" : "failed", txt);
+            info("Duck DNS TXT %s: %s\n", ok ? "set" : "failed", txt);
         } else {
             snprintf(url, sizeof(url),
                 "https://www.duckdns.org/update?domains=%s&token=%s&txt=&clear=true&verbose=true",
@@ -239,7 +239,7 @@ void DuckdnsService::onInit() {
         duckdnsUpdate();
     });
     cliRegisterCmd("duckdns", [](const char* a) {
-        if (cliWantsHelp(a)) { cliPrintf("%-*s DuckDNS status\n", CLI_HELP_COL, "duckdns"); return; }
+        if (cliWantsHelp(a)) { cliPrintf("%-*s Duck DNS status\n", CLI_HELP_COL, "duckdns"); return; }
         duckdnsStatus(w);
     });
 }

@@ -26,8 +26,12 @@ services:
 settings:
   - at:
       - { id: net }
-      - { id: duckdns, label: "DuckDNS" }
+      - { id: reachable }
+    order: 3
     rows:
-      - text:    { label: "Subdomain", key: "s.duckdns.domain", default: "" }
+      - heading: "Duck DNS"
+      - caption: "Next you might to make the device reachable by name, not IP-number. One way is to register at the [Duck DNS website](https://www.duckdns.org/) and create an account and hostname there."
+      - text:    { label: "Subdomain", key: "s.duckdns.domain", default: "", unit: ".duckdns.org" }
+      - caption: "Only the subdomain (e.g. myname for myname.duckdns.org)"
       - text:    { label: "Token", key: "s.duckdns.token", default: "", secret: true }
-      - caption: "Only the subdomain (e.g. myname for myname.duckdns.org). Token from the DuckDNS dashboard. Crontab runs 'duckdns update' when the network is up."
+      - caption: "Token from the Duck DNS dashboard."
